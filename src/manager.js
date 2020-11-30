@@ -129,7 +129,7 @@ Object.defineProperty(manager, 'components', {
 Object.defineProperty(manager, '$entityIdGenerator', {
 	get() { return _generateEntityId },
 	set(idGeneratorFunction) {
-		if (_checkIdGeneratorFunction(idGeneratorFunction)) {
+		if (_checkIdGeneratorFunction(idGeneratorFunction, 'Entity')) {
 			_generateEntityId = idGeneratorFunction
 		}
 	}
@@ -137,7 +137,7 @@ Object.defineProperty(manager, '$entityIdGenerator', {
 Object.defineProperty(manager, '$componentIdGenerator', {
 	get() { return _generateComponentId },
 	set(idGeneratorFunction) {
-		if (_checkIdGeneratorFunction(idGeneratorFunction)) {
+		if (_checkIdGeneratorFunction(idGeneratorFunction, 'Component')) {
 			_generateComponentId = idGeneratorFunction
 		}
 	}
@@ -151,8 +151,12 @@ function _checkIdGeneratorFunction(idGeneratorFunction, idTarget) {
 	if (typeof idTest === typeof void 0 || idTest === null) {
 		throw new Error(`${idTarget} ID generator function must return a value`)
 	}
-	if (!['string', 'number'].contains(typeof idTest)) {
+	if (!['string', 'number'].includes(typeof idTest)) {
 		throw new Error(`${idTarget} ID generator function must return either a string or number`)
+	}
+	const idTest2 = idGeneratorFunction()
+	if (idTest === idTest2) {
+		throw new Error(`${idTarget} ID generator function must return unique values on subsequent calls`)
 	}
 	return true
 }
