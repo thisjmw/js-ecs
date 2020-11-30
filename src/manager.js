@@ -3,6 +3,7 @@ import { isObject } from './util.js'
 
 const $entities = {}
 const $components = {}
+const _toDestroy = []
 
 let _autoEntityId = 1
 let _autoComponentId = 1
@@ -71,6 +72,7 @@ function _createEntity(entityId, componentList) {
 
 	const entity = Object.create(entityProto)
 	entity.id = entityId
+	entity.active = true
 	entity.components = []
 
 	if (componentList) {
@@ -88,7 +90,7 @@ function _createEntity(entityId, componentList) {
 
 function assignComponent(entityId, component) {
 	const entity = $entities[entityId]
-	if (!entity) {
+	if (!(entity && entity.active)) {
 		throw new Error(`Entity ${entityId} doesn't exist`) // TODO: Better error handling
 	}
 	return _assignComponent(entity, component)
@@ -111,10 +113,64 @@ function _assignComponent(entity, component) {
 }
 
 
+function removeEntity(entityId) {
+	const entity = $entities[entityId]
+	if (!entity) {
+		console.warn(`Entity ${entityId} doesn't exist`)
+	} else {
+		return _removeEntity(entity)
+	}
+}
+
+
+function _removeEntity(entity) {
+	const removedComponentTypes = new Set()
+	for (const component of entity.components) {
+		if (!removedComponentTypes.has(component.type)) {
+			removedComponentTypes.add(component.type)
+		}
+	}
+	entity.active = false
+	_toDestroy.push({
+		entity,
+		componentTypes: Array.from(removedComponentTypes)
+	})
+}
+
+
+function clear() {
+	for (const componentType in $components) {
+		if (Object.hasOwnProperty.call($components, componentType)) {
+			delete $components[componentType]
+		}
+
+	}
+	for (const entityId in $entities) {
+		if (Object.hasOwnProperty.call($entities, entityId)) {
+			delete $entities[entityId]
+		}
+	}
+}
+
+
+function $clean() {
+	for (const target of _toDestroy) {
+		delete target.entity.components
+		for (const componentType of target.componentTypes) {
+			$components[componentType] = $components[componentType].filter(c => c.entityId !== target.entity.id)
+		}
+		delete $entities[target.entity.id]
+	}
+}
+
+
 const manager = {
+	init,
 	createEntity,
+	removeEntity,
 	assignComponent,
-	init
+	clear,
+	$clean
 }
 
 Object.defineProperty(manager, 'entities', {
