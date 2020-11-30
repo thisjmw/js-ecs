@@ -1,9 +1,9 @@
 import createEntityProto from './entity.js'
-import { isObject } from './util.js'
+import { isObject, singleOrDefault } from './util.js'
 
 const $entities = {}
 const $components = {}
-const _toDestroy = []
+const $toDestroy = []
 
 let _autoEntityId = 1
 let _autoComponentId = 1
@@ -131,10 +131,31 @@ function _removeEntity(entity) {
 		}
 	}
 	entity.active = false
-	_toDestroy.push({
+	$toDestroy.push({
 		entity,
 		componentTypes: Array.from(removedComponentTypes)
 	})
+}
+
+
+function removeComponent(entityId, componentId) {
+	const entity = $entities[entityId]
+	if (!entity) {
+		console.error(`Entity ${entityId} doesn't exist`)
+	} else {
+		return _removeComponent(entity, componentId)
+	}
+}
+
+
+function _removeComponent(entity, componentId) {
+	const component = singleOrDefault(entity.components, c => c.id === componentId)
+	if (component) {
+		entity.components = entity.components.filter(c => c.id !== componentId)
+		$components[component.type] = $components[component.type].filter(c => c.id !== componentId)
+	} else {
+		console.warn(`Component ${componentId} wasn't found on entity ${entity.id}`)
+	}
 }
 
 
@@ -154,7 +175,7 @@ function clear() {
 
 
 function $clean() {
-	for (const target of _toDestroy) {
+	for (const target of $toDestroy) {
 		delete target.entity.components
 		for (const componentType of target.componentTypes) {
 			$components[componentType] = $components[componentType].filter(c => c.entityId !== target.entity.id)
@@ -169,6 +190,7 @@ const manager = {
 	createEntity,
 	removeEntity,
 	assignComponent,
+	removeComponent,
 	clear,
 	$clean
 }
