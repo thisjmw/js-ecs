@@ -1,15 +1,34 @@
-import ecs from './src/ecs.js'
+import ECS from './src/ecs.js'
 
-ecs.init()
+const ecs = new ECS()
 
-ecs.manager.createEntity([ecs.components.transform, ecs.components.health])
 ecs.manager.createEntity([
-	ecs.components.transform({
-		position: { x: 33, y: 50 },
-		scale: 0.5,
-		rotation: Math.PI / 2
-	})
+	ecs.components.transform
 ])
 
-console.log(JSON.stringify(ecs.manager.entities, null, 2))
-console.log(JSON.stringify(ecs.manager.components, null, 2))
+ecs.manager.createEntity([
+	ecs.components.transform({
+		position: {
+			x: 33,
+			y: 22
+		}
+	}),
+	ecs.components.health
+])
+
+print(ecs.manager.entities)
+
+ecs.manager.removeComponent(2, 2)
+
+print(ecs.manager.entities)
+
+ecs.manager.removeEntity(1)
+ecs.manager.$clean()
+
+print(ecs.manager.entities)
+print(ecs.manager.components)
+
+
+function print(obj) {
+	console.log(JSON.stringify(obj, null, 2))
+}

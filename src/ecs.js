@@ -1,10 +1,24 @@
-import manager from './manager.js'
+import Manager from './manager.js'
 import components from './components.js'
 
+let _ecs
 
-function init(options) {
-	manager.init(options)
 
+export default class ECS {
+
+	constructor(options) {
+		if (_ecs) {
+			throw new Error(`ECS is a singleton that already exists`)
+		}
+		_ecs = this
+		_init.call(this, options)
+		this.manager = new Manager(options)
+		this.components = components
+	}
+}
+
+
+function _init(options) {
 	if (options) {
 		if (options['components']) {
 			const componentsOption = options['components']
@@ -15,14 +29,4 @@ function init(options) {
 			}
 		}
 	}
-
 }
-
-
-const ecs = {
-	manager,
-	components,
-	init
-}
-
-export default ecs

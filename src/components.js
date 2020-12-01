@@ -1,6 +1,7 @@
 import * as blueprints from './componentBlueprints.js'
 import { isObject } from './util.js'
 
+
 const $components = {
 	transform: (props) => _createComponent('transform', props),
 	health: (props) => _createComponent('health', props)

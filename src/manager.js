@@ -1,5 +1,9 @@
-import createEntityProto from './entity.js'
+import Entity from './entity.js'
 import { isObject, singleOrDefault } from './util.js'
+
+const MAX_ID_GENERATION_TRIES = 100
+
+let _manager
 
 const $entities = {}
 const $components = {}
@@ -14,16 +18,102 @@ function _autoIncrementComponentId() { return _autoComponentId++ }
 let _generateEntityId = _autoIncrementEntityId
 let _generateComponentId = _autoIncrementComponentId
 
-let entityProto
+
+export default class Manager {
+
+	constructor(options) {
+		if (_manager) {
+			throw new Error(`Manager is a singleton that already exists`)
+		}
+		_manager = this
+		_init.call(this, options)
+	}
 
 
-function init(options) {
+	createEntity(componentList) {
+		let entityId = _generateEntityId()
+		let idGenerationTries = 0
+		while ($entities.hasOwnProperty(entityId) && idGenerationTries++ < MAX_ID_GENERATION_TRIES) {
+			entityId = _generateEntityId()
+		}
+		if (idGenerationTries > MAX_ID_GENERATION_TRIES) {
+			throw new Error(`Entity ID generator function yielded ${MAX_ID_GENERATION_TRIES} IDs that already exist`)
+		}
+		return _createEntity.call(this, entityId, componentList)
+	}
+
+
+	getEntity(entityId, silentError = false) {
+		const entity = $entities[entityId]
+		if (!(entity && entity.active)) {
+			if (silentError) {
+				console.warn(`Entity ${entityId} doesn't exist`)
+			} else {
+				throw new Error(`Entity ${entityId} doesn't exist`)
+			}
+		}
+		return entity
+	}
+
+
+	removeEntity(entityId) {
+		const entity = this.getEntity(entityId, true)
+		if (entity) {
+			return _removeEntity.call(this, entity)
+		} else {
+			return false
+		}
+	}
+
+
+	assignComponent(entityId, component) {
+		const entity = this.getEntity(entityId)
+		return _assignComponent.call(this, entity, component)
+	}
+
+
+	removeComponent(entityId, componentId) {
+		const entity = this.getEntity(entityId)
+		return _removeComponent.call(this, entity, componentId)
+	}
+
+
+	clear() {
+		for (const componentType in $components) {
+			if (Object.hasOwnProperty.call($components, componentType)) {
+				delete $components[componentType]
+			}
+
+		}
+		for (const entityId in $entities) {
+			if (Object.hasOwnProperty.call($entities, entityId)) {
+				delete $entities[entityId]
+			}
+		}
+	}
+
+
+	$clean() {
+		for (const target of $toDestroy) {
+			delete target.entity.components
+			for (const componentType of target.componentTypes) {
+				$components[componentType] = $components[componentType].filter(c => c.entityId !== target.entity.id)
+			}
+			delete $entities[target.entity.id]
+		}
+	}
+}
+
+
+function _init(options) {
+	Entity.setEntityManager(this)
+
 	if (options) {
 
 		if (options['entityIdGenerator']) {
 			const entityIdGenerator = options['entityIdGenerator']
 			if (typeof entityIdGenerator === 'function') {
-				manager.$entityIdGenerator = entityIdGenerator
+				this.$entityIdGenerator = entityIdGenerator
 			} else if (isObject(entityIdGenerator)) {
 				if (entityIdGenerator['auto']) {
 					_autoEntityId = entityIdGenerator['start'] || 1
@@ -36,7 +126,7 @@ function init(options) {
 		if (options['componentIdGenerator']) {
 			const componentIdGenerator = options['componentIdGenerator']
 			if (typeof componentIdGenerator === 'function') {
-				manager.$componentIdGenerator = componentIdGenerator
+				this.$componentIdGenerator = componentIdGenerator
 			} else if (isObject(componentIdGenerator)) {
 				if (componentIdGenerator['auto']) {
 					_autoComponentId = componentIdGenerator['start'] || 1
@@ -46,17 +136,6 @@ function init(options) {
 			}
 		}
 	}
-	entityProto = entityProto || createEntityProto(this)
-}
-
-
-function createEntity(componentList = []) {
-	let entityId = _generateEntityId()
-	while (Object.hasOwnProperty.call($entities, entityId)) {
-		entityId = _generateEntityId()
-	}
-
-	return _createEntity(entityId, componentList)
 }
 
 
@@ -65,21 +144,14 @@ function _createEntity(entityId, componentList) {
 		throw new Error(`Entity ${entityId} already exists`)
 	}
 
-	if (!entityProto) {
-		console.warn(`Manager was not initialized`)
-		init()
-	}
-
-	const entity = Object.create(entityProto)
-	entity.id = entityId
-	entity.active = true
-	entity.components = []
+	const entity = new Entity(entityId)
 
 	if (componentList) {
-		for (const component of componentList) {
-			const componentObject = typeof component === 'function' ? component() : component
-			_assignComponent(entity, componentObject)
+		let components = componentList
+		if (!Array.isArray(components)) {
+			components = [ components ]
 		}
+		components.forEach(component => _assignComponent(entity, component))
 	}
 
 	$entities[entityId] = entity
@@ -88,12 +160,18 @@ function _createEntity(entityId, componentList) {
 }
 
 
-function assignComponent(entityId, component) {
-	const entity = $entities[entityId]
-	if (!(entity && entity.active)) {
-		throw new Error(`Entity ${entityId} doesn't exist`) // TODO: Better error handling
+function _removeEntity(entity) {
+	const removedComponentTypes = new Set()
+	for (const component of entity.components) {
+		if (!removedComponentTypes.has(component.type)) {
+			removedComponentTypes.add(component.type)
+		}
 	}
-	return _assignComponent(entity, component)
+	entity.active = false
+	$toDestroy.push({
+		entity,
+		componentTypes: Array.from(removedComponentTypes)
+	})
 }
 
 
@@ -113,113 +191,45 @@ function _assignComponent(entity, component) {
 }
 
 
-function removeEntity(entityId) {
-	const entity = $entities[entityId]
-	if (!entity) {
-		console.warn(`Entity ${entityId} doesn't exist`)
-	} else {
-		return _removeEntity(entity)
-	}
-}
-
-
-function _removeEntity(entity) {
-	const removedComponentTypes = new Set()
-	for (const component of entity.components) {
-		if (!removedComponentTypes.has(component.type)) {
-			removedComponentTypes.add(component.type)
-		}
-	}
-	entity.active = false
-	$toDestroy.push({
-		entity,
-		componentTypes: Array.from(removedComponentTypes)
-	})
-}
-
-
-function removeComponent(entityId, componentId) {
-	const entity = $entities[entityId]
-	if (!entity) {
-		console.error(`Entity ${entityId} doesn't exist`)
-	} else {
-		return _removeComponent(entity, componentId)
-	}
-}
-
-
 function _removeComponent(entity, componentId) {
 	const component = singleOrDefault(entity.components, c => c.id === componentId)
 	if (component) {
 		entity.components = entity.components.filter(c => c.id !== componentId)
-		$components[component.type] = $components[component.type].filter(c => c.id !== componentId)
+		$components[component.type] = $components[component.type].filter(c => c.component.id !== componentId)
 	} else {
 		console.warn(`Component ${componentId} wasn't found on entity ${entity.id}`)
 	}
 }
 
 
-function clear() {
-	for (const componentType in $components) {
-		if (Object.hasOwnProperty.call($components, componentType)) {
-			delete $components[componentType]
-		}
-
-	}
-	for (const entityId in $entities) {
-		if (Object.hasOwnProperty.call($entities, entityId)) {
-			delete $entities[entityId]
-		}
-	}
-}
-
-
-function $clean() {
-	for (const target of $toDestroy) {
-		delete target.entity.components
-		for (const componentType of target.componentTypes) {
-			$components[componentType] = $components[componentType].filter(c => c.entityId !== target.entity.id)
-		}
-		delete $entities[target.entity.id]
-	}
-}
-
-
-const manager = {
-	init,
-	createEntity,
-	removeEntity,
-	assignComponent,
-	removeComponent,
-	clear,
-	$clean
-}
-
-Object.defineProperty(manager, 'entities', {
-	get() { return $entities },
-	set() { console.error(`Can't manually assign manager.entities`) } // TODO: Better warning
-})
-Object.defineProperty(manager, 'components', {
-	get() { return $components },
-	set() { console.error(`Can't manually assign manager.components`) } // TODO: Better warning
-})
-
-Object.defineProperty(manager, '$entityIdGenerator', {
-	get() { return _generateEntityId },
-	set(idGeneratorFunction) {
+Object.defineProperty(Manager.prototype, '$entityIdGenerator', {
+	get: () => _generateEntityId,
+	set: idGeneratorFunction => {
 		if (_checkIdGeneratorFunction(idGeneratorFunction, 'Entity')) {
 			_generateEntityId = idGeneratorFunction
 		}
 	}
 })
-Object.defineProperty(manager, '$componentIdGenerator', {
-	get() { return _generateComponentId },
-	set(idGeneratorFunction) {
+
+Object.defineProperty(Manager.prototype, '$componentIdGenerator', {
+	get: () => _generateComponentId,
+	set: idGeneratorFunction => {
 		if (_checkIdGeneratorFunction(idGeneratorFunction, 'Component')) {
 			_generateComponentId = idGeneratorFunction
 		}
 	}
 })
+
+Object.defineProperty(Manager.prototype, 'entities', {
+	get: () => $entities,
+	set: () => { throw new Error(`Can't manually overwrite Manager.entities`) }
+})
+
+Object.defineProperty(Manager.prototype, 'components', {
+	get: () => $components,
+	set: () => { throw new Error(`Can't manually overwrite Manager.components`) }
+})
+
 
 function _checkIdGeneratorFunction(idGeneratorFunction, idTarget) {
 	if (typeof idGeneratorFunction !== 'function') {
@@ -238,5 +248,3 @@ function _checkIdGeneratorFunction(idGeneratorFunction, idTarget) {
 	}
 	return true
 }
-
-export default manager

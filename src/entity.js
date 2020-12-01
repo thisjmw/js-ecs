@@ -1,15 +1,21 @@
-function addComponent(component) {
-	return this.manager.assignComponent(this.id, component)
-}
+export default class Entity {
 
-function removeComponent(componentId) {
-	return this.manager.removeComponent(this.id, componentId)
-}
-
-export default function createEntityProto(manager) {
-	return {
-		manager,
-		addComponent,
-		removeComponent
+	constructor(entityId) {
+		if (!this.manager) {
+			throw new Error(`Must define entity manager with Entity.setEntityManager first`)
+		}
+		this.id = entityId || this.manager.$entityIdGenerator()
+		this.active = true
+		this.components = []
 	}
+
+
+	addComponent(component) {
+		return this.manager.assignComponent(this.id, component)
+	}
+}
+
+
+Entity.setEntityManager = function setEntityManager(manager) {
+	Entity.prototype.manager = manager
 }
