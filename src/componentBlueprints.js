@@ -1,5 +1,5 @@
 export const transform = {
-	proto: { type: 'transform' },
+	proto: { $type: 'transform' },
 	defaults: {
 		position: {
 			x: 0,
@@ -11,6 +11,6 @@ export const transform = {
 }
 
 export const health = {
-	proto: { type: 'health' },
+	proto: { $type: 'health' },
 	defaults: { value: 100 }
 }

@@ -95,7 +95,7 @@ function $registerComponents(componentDefinitionsArray) {
 
 
 function _makeComponentBlueprint(name, defaults, methods) {
-	const proto = { type: name }
+	const proto = { $type: name }
 	if (methods) {
 		for (const methodKey in methods) {
 			if (Object.hasOwnProperty.call(methods, methodKey)) {

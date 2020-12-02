@@ -1,4 +1,5 @@
 import Entity from './entity.js'
+import QueryManager from './queryManager.js'
 import { isObject, singleOrDefault } from './util.js'
 
 const MAX_ID_GENERATION_TRIES = 100
@@ -8,6 +9,8 @@ let _manager
 const $entities = {}
 const $components = {}
 const $toDestroy = []
+
+let $queryManager
 
 let _autoEntityId = 1
 let _autoComponentId = 1
@@ -68,7 +71,9 @@ export default class Manager {
 
 	assignComponent(entityId, component) {
 		const entity = this.getEntity(entityId)
-		return _assignComponent.call(this, entity, component)
+		const createdComponent = _assignComponent.call(this, entity, component)
+		$queryManager.componentAdded(entity, createdComponent.$type)
+		return createdComponent
 	}
 
 
@@ -78,7 +83,21 @@ export default class Manager {
 	}
 
 
-	clear() {
+	$registerQuery(query) {
+		const firstComponentName = query.components[0]
+		if (Object.hasOwnProperty.call($components, firstComponentName)) {
+			const entityIds = $components[firstComponentName].map(c => c.entityId)
+			entityIds.forEach(id => {
+				const entity = this.getEntity(id, true)
+				if (query.testEntity(entity)) {
+					query.addEntity(entity)
+				}
+			})
+		}
+	}
+
+
+	reset() {
 		for (const componentType in $components) {
 			if (Object.hasOwnProperty.call($components, componentType)) {
 				delete $components[componentType]
@@ -90,11 +109,13 @@ export default class Manager {
 				delete $entities[entityId]
 			}
 		}
+		$queryManager.clear()
 	}
 
 
 	$clean() {
 		for (const target of $toDestroy) {
+			$queryManager.removeEntity(target.entity)
 			delete target.entity.components
 			for (const componentType of target.componentTypes) {
 				$components[componentType] = $components[componentType].filter(c => c.entityId !== target.entity.id)
@@ -107,6 +128,7 @@ export default class Manager {
 
 function _init(options) {
 	Entity.setEntityManager(this)
+	$queryManager = new QueryManager(this)
 
 	if (options) {
 
@@ -136,6 +158,22 @@ function _init(options) {
 			}
 		}
 	}
+
+	const queriesInterface = {
+		registerQuery: $queryManager.registerQuery.bind($queryManager),
+		clear: $queryManager.clear.bind($queryManager),
+		reset: $queryManager.reset.bind($queryManager)
+	}
+
+	Object.defineProperty(queriesInterface, 'all', {
+		get: () => $queryManager.getQueries()
+	})
+
+	Object.defineProperty(queriesInterface, 'byComponent', {
+		get: () => $queryManager.getQueriesByComponent()
+	})
+
+	this.queries = queriesInterface
 }
 
 
@@ -155,6 +193,7 @@ function _createEntity(entityId, componentList) {
 	}
 
 	$entities[entityId] = entity
+	$queryManager.addEntity(entity)
 
 	return entity
 }
@@ -163,8 +202,8 @@ function _createEntity(entityId, componentList) {
 function _removeEntity(entity) {
 	const removedComponentTypes = new Set()
 	for (const component of entity.components) {
-		if (!removedComponentTypes.has(component.type)) {
-			removedComponentTypes.add(component.type)
+		if (!removedComponentTypes.has(component.$type)) {
+			removedComponentTypes.add(component.$type)
 		}
 	}
 	entity.active = false
@@ -182,12 +221,12 @@ function _assignComponent(entity, component) {
 	entity.components.push(componentObject)
 
 	const entityId = entity.id
-	if (!Object.hasOwnProperty.call($components, componentObject.type)) {
-		$components[componentObject.type] = []
+	if (!Object.hasOwnProperty.call($components, componentObject.$type)) {
+		$components[componentObject.$type] = []
 	}
-	$components[componentObject.type].push({ entityId, component: componentObject })
+	$components[componentObject.$type].push({ entityId, component: componentObject })
 
-	return entity
+	return componentObject
 }
 
 
@@ -195,7 +234,8 @@ function _removeComponent(entity, componentId) {
 	const component = singleOrDefault(entity.components, c => c.id === componentId)
 	if (component) {
 		entity.components = entity.components.filter(c => c.id !== componentId)
-		$components[component.type] = $components[component.type].filter(c => c.component.id !== componentId)
+		$components[component.$type] = $components[component.$type].filter(c => c.component.id !== componentId)
+		$queryManager.componentRemoved(entity, component.$type)
 	} else {
 		console.warn(`Component ${componentId} wasn't found on entity ${entity.id}`)
 	}
@@ -228,6 +268,11 @@ Object.defineProperty(Manager.prototype, 'entities', {
 Object.defineProperty(Manager.prototype, 'components', {
 	get: () => $components,
 	set: () => { throw new Error(`Can't manually overwrite Manager.components`) }
+})
+
+Object.defineProperty(Manager.prototype, '$queryManager', {
+	get: () => $queryManager,
+	set: () => { throw new Error(`Can't manually overwrite Manager.$queryManager`) }
 })
 
 
