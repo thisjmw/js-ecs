@@ -1,5 +1,5 @@
 import * as blueprints from './componentBlueprints.js'
-import { isObject } from './util.js'
+import { isObject, getPrintableObject } from './util.js'
 
 
 const $components = {
@@ -111,6 +111,17 @@ function _makeComponentBlueprint(name, defaults, methods) {
 }
 
 
+function componentName(component) {
+	const name = (typeof component === 'function') ? component.name : component.$type
+	if (name) {
+		return name
+	} else {
+		const printable = getPrintableObject(component)
+		throw new TypeError(`Invalid component: ${printable}`)
+	}
+}
+
+
 const components = $components
 
 Object.defineProperty(components, '$registerComponent', {
@@ -119,6 +130,10 @@ Object.defineProperty(components, '$registerComponent', {
 
 Object.defineProperty(components, '$registerComponents', {
 	value: $registerComponents
+})
+
+Object.defineProperty(components, '$name', {
+	value: componentName
 })
 
 export default components

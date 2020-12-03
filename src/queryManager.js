@@ -41,6 +41,8 @@ export default class QueryManager {
 
 		this.queries[name] = query
 		$entityManager.$registerQuery(query)
+
+		return query
 	}
 
 
@@ -60,12 +62,11 @@ export default class QueryManager {
 
 
 	getMatchedQueries(entity) {
-		const components = entity.components.map(c => c.$type)
 		const matchedQueries = []
-		components.forEach(component => {
-			const potentialQueries = this.queriesByComponent[component]
+		Object.keys(entity.components).forEach(componentName => {
+			const potentialQueries = this.queriesByComponent[componentName]
 			potentialQueries.forEach(query => {
-				if (query.entities.includes(entity.id)) {
+				if (query.entities.includes(entity)) {
 					matchedQueries.push(query)
 				}
 			})
@@ -95,12 +96,12 @@ export default class QueryManager {
 
 
 	addEntity(entity) {
-		entity.components.forEach(component => this.componentAdded(entity, component.$type))
+		Object.keys(entity.components).forEach(componentName => this.componentAdded(entity, componentName))
 	}
 
 
 	removeEntity(entity) {
-		entity.components.forEach(component => this.componentRemoved(entity, component.$type))
+		Object.keys(entity.components).forEach(componentName => this.componentRemoved(entity, componentName))
 	}
 
 

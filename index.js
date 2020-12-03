@@ -25,7 +25,7 @@ ecs.manager.createEntity([
 
 print(ecs.manager.queries.all)
 
-ecs.manager.removeComponent(2, 2)
+ecs.manager.removeComponent(2, 'transform')
 
 print(ecs.manager.queries.all)
 print(ecs.manager.queries.byComponent)

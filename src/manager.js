@@ -1,6 +1,6 @@
 import Entity from './entity.js'
 import QueryManager from './queryManager.js'
-import { isObject, singleOrDefault } from './util.js'
+import { isObject, getPrintableObject } from './util.js'
 
 const MAX_ID_GENERATION_TRIES = 100
 
@@ -77,9 +77,10 @@ export default class Manager {
 	}
 
 
-	removeComponent(entityId, componentId) {
+	removeComponent(entityId, componentType) {
 		const entity = this.getEntity(entityId)
-		return _removeComponent.call(this, entity, componentId)
+		const component = entity.getComponent(componentType)
+		return _removeComponent.call(this, entity, component)
 	}
 
 
@@ -162,7 +163,8 @@ function _init(options) {
 	const queriesInterface = {
 		registerQuery: $queryManager.registerQuery.bind($queryManager),
 		clear: $queryManager.clear.bind($queryManager),
-		reset: $queryManager.reset.bind($queryManager)
+		reset: $queryManager.reset.bind($queryManager),
+		getQuery: $queryManager.getQuery.bind($queryManager)
 	}
 
 	Object.defineProperty(queriesInterface, 'all', {
@@ -201,9 +203,11 @@ function _createEntity(entityId, componentList) {
 
 function _removeEntity(entity) {
 	const removedComponentTypes = new Set()
-	for (const component of entity.components) {
-		if (!removedComponentTypes.has(component.$type)) {
-			removedComponentTypes.add(component.$type)
+	for (const componentName in entity.components) {
+		if (Object.hasOwnProperty.call(entity.components, componentName)) {
+			if (!removedComponentTypes.has(componentName)) {
+				removedComponentTypes.add(componentName)
+			}
 		}
 	}
 	entity.active = false
@@ -218,7 +222,12 @@ function _assignComponent(entity, component) {
 	const componentObject = typeof component === 'function' ? component() : component
 	componentObject.id = _generateComponentId()
 
-	entity.components.push(componentObject)
+	if (!entity.getComponent(component)) {
+		entity.components[componentObject.$type] = componentObject
+	} else {
+		// TODO: Better solution?
+		throw new Error(`Entity ${entity.id} already has component "${componentObject.$type}`)
+	}
 
 	const entityId = entity.id
 	if (!Object.hasOwnProperty.call($components, componentObject.$type)) {
@@ -230,14 +239,14 @@ function _assignComponent(entity, component) {
 }
 
 
-function _removeComponent(entity, componentId) {
-	const component = singleOrDefault(entity.components, c => c.id === componentId)
+function _removeComponent(entity, component) {
 	if (component) {
-		entity.components = entity.components.filter(c => c.id !== componentId)
-		$components[component.$type] = $components[component.$type].filter(c => c.component.id !== componentId)
+		delete entity.components[component.$type]
+		$components[component.$type] = $components[component.$type].filter(c => c.component !== component)
 		$queryManager.componentRemoved(entity, component.$type)
 	} else {
-		console.warn(`Component ${componentId} wasn't found on entity ${entity.id}`)
+		const printableComponent = getPrintableObject(component, '$type')
+		console.warn(`Component "${printableComponent}" wasn't found on entity ${entity.id}`)
 	}
 }
 

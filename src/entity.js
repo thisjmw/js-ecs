@@ -1,3 +1,6 @@
+import components from './components.js'
+
+
 export default class Entity {
 
 	constructor(entityId) {
@@ -6,12 +9,18 @@ export default class Entity {
 		}
 		this.id = entityId || this.manager.$entityIdGenerator()
 		this.active = true
-		this.components = []
+		this.components = {}
 	}
 
 
 	addComponent(component) {
 		return this.manager.assignComponent(this.id, component)
+	}
+
+
+	getComponent(component) {
+		const name = typeof component === 'string' ? component : components.$name(component)
+		return this.components[name]
 	}
 }
 

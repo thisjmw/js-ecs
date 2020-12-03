@@ -8,7 +8,7 @@ export default class Query {
 
 
 	testEntity(entity) {
-		const entityComponents = entity.components.map(c => c.$type)
+		const entityComponents = Object.keys(entity.components)
 		return this.components.reduce((result, component) => {
 			return result && entityComponents.includes(component)
 		}, true)
@@ -16,8 +16,8 @@ export default class Query {
 
 
 	addEntity(entity) {
-		if (!this.entities.includes(entity.id)) {
-			this.entities.push(entity.id)
+		if (!this.entities.includes(entity)) {
+			this.entities.push(entity)
 			return true
 		} else {
 			return false
@@ -26,8 +26,8 @@ export default class Query {
 
 
 	removeEntity(entity) {
-		if (this.entities.includes(entity.id)) {
-			this.entities = this.entities.filter(id => id !== entity.id)
+		if (this.entities.includes(entity)) {
+			this.entities = this.entities.filter(e => e !== entity)
 			return true
 		} else {
 			return false
