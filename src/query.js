@@ -1,9 +1,13 @@
 export default class Query {
 
 	constructor(name, components) {
+		if (!this.queryManager) {
+			throw new Error(`Must define query manager with Query.setQueryManager first`)
+		}
 		this.name = name
 		this.components = _sanitizeComponents(components)
 		this.entities = []
+		this.systems = []
 	}
 
 
@@ -33,6 +37,26 @@ export default class Query {
 			return false
 		}
 	}
+
+
+	addSystem(system) {
+		if (!this.systems.includes(system)) {
+			this.systems.push(system)
+			return true
+		} else {
+			return false
+		}
+	}
+
+
+	removeSystem(system) {
+		if (this.systems.includes(system)) {
+			this.systems = this.systems.filter(s => s !== system)
+			return true
+		} else {
+			return false
+		}
+	}
 }
 
 
@@ -49,4 +73,9 @@ function _sanitizeComponents(componentList) {
 		}
 	})
 	return sanitizedComponents
+}
+
+
+Query.setQueryManager = function setQueryManager(queryManager) {
+	Query.prototype.queryManager = queryManager
 }

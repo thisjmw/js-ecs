@@ -9,6 +9,8 @@ export default class QueryManager {
 		this.queries = {}
 		this.queriesByComponent = {}
 		$entityManager = entityManager
+		Query.setQueryManager(this)
+		this.registerQuery('$GLOBAL', [])
 	}
 
 
@@ -56,13 +58,14 @@ export default class QueryManager {
 		for (const component of components) {
 			this.queriesByComponent[component] = this.queriesByComponent.filter(q => q.name !== name)
 		}
+		query.systems.forEach(system => system.setQuery(this.queries['$GLOBAL']))
 		delete this.queries[name]
 		return true
 	}
 
 
 	getMatchedQueries(entity) {
-		const matchedQueries = []
+		const matchedQueries = [ this.queries['$GLOBAL'] ]
 		Object.keys(entity.components).forEach(componentName => {
 			const potentialQueries = this.queriesByComponent[componentName]
 			potentialQueries.forEach(query => {
@@ -97,11 +100,13 @@ export default class QueryManager {
 
 	addEntity(entity) {
 		Object.keys(entity.components).forEach(componentName => this.componentAdded(entity, componentName))
+		this.queries['$GLOBAL'].addEntity(entity)
 	}
 
 
 	removeEntity(entity) {
 		Object.keys(entity.components).forEach(componentName => this.componentRemoved(entity, componentName))
+		this.queries['$GLOBAL'].removeEntity(entity)
 	}
 
 
@@ -116,6 +121,7 @@ export default class QueryManager {
 
 	reset() {
 		this.queries = {}
+		this.registerQuery('$GLOBAL', [])
 		this.queriesByComponent = {}
 	}
 }

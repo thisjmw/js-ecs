@@ -1,5 +1,6 @@
 import Entity from './entity.js'
 import QueryManager from './queryManager.js'
+import SystemManager from './systemManager.js'
 import { isObject, getPrintableObject } from './util.js'
 
 const MAX_ID_GENERATION_TRIES = 100
@@ -130,6 +131,8 @@ export default class Manager {
 function _init(options) {
 	Entity.setEntityManager(this)
 	$queryManager = new QueryManager(this)
+
+	this.systems = new SystemManager(this, $queryManager) // TODO: Better interface
 
 	if (options) {
 
