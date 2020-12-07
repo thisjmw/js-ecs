@@ -4,7 +4,10 @@ import { isObject, getPrintableObject } from './util.js'
 
 const $components = {
 	transform: (props) => _createComponent('transform', props),
-	health: (props) => _createComponent('health', props)
+	health: (props) => _createComponent('health', props),
+	collision: (props) => _createComponent('collision', props),
+	colliderGeometry: (props) => _createComponent('colliderGeometry', props),
+	colliderCircle: (props) => _createComponent('colliderCircle', props)
 }
 
 const componentBlueprints = { ...blueprints }

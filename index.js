@@ -3,90 +3,125 @@ import ECS from './src/ecs.js'
 const ecs = new ECS()
 
 
+let circles = []
+
+
+class TestCircle {
+	constructor(x, y, radius) {
+		this.x = x
+		this.y = y
+		this.radius = radius
+		this.entity = ecs.manager.createEntity([
+
+			ecs.components.transform({
+				position: {
+					x: this.x,
+					y: this.y
+				},
+				scale: 1
+			}),
+
+			ecs.components.collision,
+
+			ecs.components.colliderGeometry({
+				colliders: [
+					ecs.components.colliderCircle({
+						radius: this.radius
+					})
+				]
+			})
+		])
+	}
+
+	destroy() {
+		ecs.manager.removeEntity(this.entity.id)
+	}
+}
+
+
 ecs.manager.systems.registerSystem(
-	'adjacent_entities',
-	ecs.manager.queries.registerQuery('transform', [ecs.components.transform]),
-	function adjacentEntitiesSystem(entities) {
-		const matched = []
+	'collision_system',
+	ecs.manager.queries.registerQuery('collision', [
+		ecs.components.transform,
+		ecs.components.collision,
+		ecs.components.colliderGeometry
+	]),
+	function collisionSystem(entities) {
+		const entitiesColliding = []
 		let i = 1
 		for (const entity of entities) {
-			const pos = entity.getComponent(ecs.components.transform).position
-			for (let e = i; e < entities.length; e++) {
+			entity.getComponent(ecs.components.collision).entities = []
+
+			const othersCollidingWithThisEntity = entitiesColliding
+				.filter(pair => pair.includes(entity))
+				.map(pair => pair.find(e => e !== entity))
+
+			const transform = entity.getComponent(ecs.components.transform)
+			const colliderGeometry = entity.getComponent(ecs.components.colliderGeometry)
+
+			// Loop over other entities that haven't already been `entity` in the main loop
+			for (let e = i++; e < entities.length; e++) {
 				const other = entities[e]
-				if (other !== entity) {
-					const otherPos = other.getComponent(ecs.components.transform).position
-					if (Math.abs(pos.x - otherPos.x) + Math.abs(pos.y - otherPos.y) <= 1) {
-						if (!(matched.find(pair => pair.includes(entity) && pair.includes(other)))) {
-							matched.push([entity, other])
-						}
+				const otherTransform = other.getComponent(ecs.components.transform)
+				const otherColliderGeometry = other.getComponent(ecs.components.colliderGeometry)
+
+				let colliding = !!othersCollidingWithThisEntity.includes(other)
+				if (!colliding) {
+					colliding = colliderGeometry.isColliding(transform, otherColliderGeometry, otherTransform)
+				}
+
+				if (colliding) {
+					othersCollidingWithThisEntity.push(other)
+					entitiesColliding.push([entity, other])
+				}
+			}
+
+			entity.getComponent(ecs.components.collision).entities = othersCollidingWithThisEntity
+		}
+	}
+)
+
+
+ecs.manager.systems.registerSystem(
+	'collision_reader_system',
+	ecs.manager.queries.registerQuery('collision_reader', [ecs.components.collision]),
+	function collisionReaderSystem(entities) {
+		const handledCollisions = []
+
+		for (const entity of entities) {
+			const collidingEntities = entity.getComponent(ecs.components.collision).entities
+			if (collidingEntities.length) {
+				for (const other of collidingEntities) {
+					if (!handledCollisions.find(pair => pair.includes(entity) && pair.includes(other))) {
+						console.log(`Entity [${entity.id}] is colliding with entity [${other.id}]`)
+						handledCollisions.push([entity, other])
 					}
 				}
 			}
-			i++
 		}
+	}
+)
 
-		for (const match of matched) {
-			const e1pos = match[0].getComponent(ecs.components.transform).position
-			const e2pos = match[1].getComponent(ecs.components.transform).position
-			console.log(`Entities [${match[0].id}] and [${match[1].id}] are neighbors: (${e1pos.x}, ${e1pos.y}) (${e2pos.x}, ${e2pos.y})`)
-		}
-	})
 
 ecs.manager.systems.registerSystem(
-	'all_entities',
+	'cleanup_system',
 	ecs.manager.queries.getQuery('$GLOBAL'),
-	function allEntitiesSystem(entities, time) {
-		for (const entity of entities) {
-			console.log(`Entity [${entity.id}] exists at [t=${time}]`)
-		}
-	})
-
-
-ecs.manager.createEntity([
-	ecs.components.transform({
-		position: {
-			x: 32,
-			y: 22
-		}
-	})
-])
-
-ecs.manager.createEntity([
-	ecs.components.transform({
-		position: {
-			x: 33,
-			y: 22
-		}
-	})
-])
-
-ecs.manager.createEntity([
-	ecs.components.transform({
-		position: {
-			x: 34,
-			y: 22
-		}
-	})
-])
-
-ecs.manager.createEntity([
-	ecs.components.transform({
-		position: {
-			x: 35,
-			y: 23
-		}
-	})
-])
-
-let iter = 0
-let interval = setInterval(() => {
-	if (iter >= 5) {
-		clearInterval(interval)
-	} else {
-		ecs.manager.systems.run(Date.now())
-		iter++
+	function cleanupSystem() {
+		circles.forEach(circle => circle.destroy())
+		ecs.manager.$clean()
 	}
-}, 1000 / 60)
+)
+
+
+import { randomInt } from './src/util.js'
+
+for (let i = 0; i < 50; i++) {
+	circles.push(new TestCircle(randomInt(10, 50), randomInt(10, 50), randomInt(1, 10)))
+}
+
+ecs.manager.systems.run()
+
+
 
 
 function print(obj) {
