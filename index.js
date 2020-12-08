@@ -50,11 +50,12 @@ ecs.world.systems.registerSystem(
 		const entitiesColliding = []
 		let i = 1
 		for (const entity of entities) {
+			const entityId = entity.id
 			entity.getComponent(ecs.components.collision).entities = []
 
 			const othersCollidingWithThisEntity = entitiesColliding
-				.filter(pair => pair.includes(entity))
-				.map(pair => pair.find(e => e !== entity))
+				.filter(pair => pair.includes(entityId))
+				.map(pair => pair.find(id => id !== entityId))
 
 			const transform = entity.getComponent(ecs.components.transform)
 			const colliderGeometry = entity.getComponent(ecs.components.colliderGeometry)
@@ -62,17 +63,18 @@ ecs.world.systems.registerSystem(
 			// Loop over other entities that haven't already been `entity` in the main loop
 			for (let e = i++; e < entities.length; e++) {
 				const other = entities[e]
+				const otherId = other.id
 				const otherTransform = other.getComponent(ecs.components.transform)
 				const otherColliderGeometry = other.getComponent(ecs.components.colliderGeometry)
 
-				let colliding = !!othersCollidingWithThisEntity.includes(other)
+				let colliding = othersCollidingWithThisEntity.includes(otherId)
 				if (!colliding) {
 					colliding = colliderGeometry.isColliding(transform, otherColliderGeometry, otherTransform)
 				}
 
 				if (colliding) {
-					othersCollidingWithThisEntity.push(other)
-					entitiesColliding.push([entity, other])
+					othersCollidingWithThisEntity.push(otherId)
+					entitiesColliding.push([entityId, otherId])
 				}
 			}
 
@@ -89,12 +91,13 @@ ecs.world.systems.registerSystem(
 		const handledCollisions = []
 
 		for (const entity of entities) {
-			const collidingEntities = entity.getComponent(ecs.components.collision).entities
-			if (collidingEntities.length) {
-				for (const other of collidingEntities) {
-					if (!handledCollisions.find(pair => pair.includes(entity) && pair.includes(other))) {
-						console.log(`Entity [${entity.id}] is colliding with entity [${other.id}]`)
-						handledCollisions.push([entity, other])
+			const collidingEntityIds = entity.getComponent(ecs.components.collision).entities
+			if (collidingEntityIds.length) {
+				const entityId = entity.id
+				for (const otherId of collidingEntityIds) {
+					if (!handledCollisions.find(pair => pair.includes(entityId) && pair.includes(otherId))) {
+						console.log(`Entity [${entityId}] is colliding with entity [${otherId}]`)
+						handledCollisions.push([entityId, otherId])
 					}
 				}
 			}

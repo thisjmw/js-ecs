@@ -36,9 +36,9 @@ export default class Query {
 	}
 
 
-	addSystem(system) {
-		if (!this.systems.includes(system)) {
-			this.systems.push(system)
+	addSystem(systemName) {
+		if (!this.systems.includes(systemName)) {
+			this.systems.push(systemName)
 			return true
 		} else {
 			return false
@@ -46,9 +46,9 @@ export default class Query {
 	}
 
 
-	removeSystem(system) {
-		if (this.systems.includes(system)) {
-			this.systems = this.systems.filter(s => s !== system)
+	removeSystem(systemName) {
+		if (this.systems.includes(systemName)) {
+			this.systems = this.systems.filter(name => name !== systemName)
 			return true
 		} else {
 			return false

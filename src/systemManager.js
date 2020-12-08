@@ -12,7 +12,7 @@ export default class SystemManager {
 	}
 
 
-	getSystem(name) { return this.systems.find(s => s.name === name) }
+	getSystem(name) { return this.systems.find(system => system.name === name) }
 	getSystems() { return this.systems }
 
 
@@ -33,7 +33,7 @@ export default class SystemManager {
 		}
 
 		const system = new System(name, query, systemFunction)
-		query.addSystem(system)
+		query.addSystem(name)
 
 		this.systems.push(system)
 

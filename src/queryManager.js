@@ -52,7 +52,9 @@ function $removeQuery(name) {
 	for (const component of components) {
 		$queriesByComponent[component] = $queriesByComponent.filter(q => q.name !== name)
 	}
-	query.systems.forEach(system => system.setQuery(this.queries['$GLOBAL']))
+	query.systems.forEach(systemName => {
+		_world.systems.getSystem(systemName).setQuery(this.queries['$GLOBAL'])
+	})
 	delete $queries[name]
 	return true
 }
