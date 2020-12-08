@@ -4,11 +4,11 @@ import Query from './query.js'
 const $queries = {}
 const $queriesByComponent = {}
 
-let _entityManager
+let _world
 
 
-function $init(entityManager) {
-	_entityManager = entityManager
+function $init(world) {
+	_world = world
 	$registerQuery('$GLOBAL', [])
 }
 
@@ -36,7 +36,7 @@ function $registerQuery(name, components) {
 	}
 
 	$queries[name] = query
-	_entityManager.$queryAdded(query)
+	_world.$queryAdded(query)
 
 	return query
 }

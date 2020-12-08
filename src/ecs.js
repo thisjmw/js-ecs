@@ -1,4 +1,4 @@
-import Manager from './manager.js'
+import World from './world.js'
 import components from './components.js'
 
 let _ecs
@@ -12,7 +12,7 @@ export default class ECS {
 		}
 		_ecs = this
 		_init.call(this, options)
-		this.manager = new Manager(options)
+		this.world = new World(options)
 		this.components = components
 	}
 }

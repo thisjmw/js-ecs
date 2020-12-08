@@ -127,16 +127,8 @@ function componentName(component) {
 
 const components = $components
 
-Object.defineProperty(components, '$registerComponent', {
-	value: $registerComponent
-})
-
-Object.defineProperty(components, '$registerComponents', {
-	value: $registerComponents
-})
-
-Object.defineProperty(components, '$name', {
-	value: componentName
-})
+Object.defineProperty(components, '$registerComponent', { value: $registerComponent })
+Object.defineProperty(components, '$registerComponents', { value: $registerComponents })
+Object.defineProperty(components, '$name', { value: componentName })
 
 export default components

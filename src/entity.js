@@ -4,17 +4,17 @@ import components from './components.js'
 export default class Entity {
 
 	constructor(entityId) {
-		if (!this.manager) {
-			throw new Error(`Must define entity manager with Entity.setEntityManager first`)
+		if (!this.world) {
+			throw new Error(`Must define world with Entity.setWorld(world) first`)
 		}
-		this.id = entityId || this.manager.$entityIdGenerator()
+		this.id = entityId || this.world.$entityIdGenerator()
 		this.active = true
 		this.components = {}
 	}
 
 
 	addComponent(component) {
-		return this.manager.assignComponent(this.id, component)
+		return this.world.assignComponent(this.id, component)
 	}
 
 
@@ -25,6 +25,6 @@ export default class Entity {
 }
 
 
-Entity.setEntityManager = function setEntityManager(manager) {
-	Entity.prototype.manager = manager
+Entity.setWorld = function setWorld(world) {
+	Entity.prototype.world = world
 }

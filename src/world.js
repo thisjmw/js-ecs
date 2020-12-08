@@ -5,7 +5,7 @@ import { isObject, getPrintableObject } from './util.js'
 
 const MAX_ID_GENERATION_TRIES = 100
 
-let _manager
+let _world
 
 const $entities = {}
 const $components = {}
@@ -21,13 +21,13 @@ let _generateEntityId = _autoIncrementEntityId
 let _generateComponentId = _autoIncrementComponentId
 
 
-export default class Manager {
+export default class World {
 
 	constructor(options) {
-		if (_manager) {
-			throw new Error(`Manager is a singleton that already exists`)
+		if (_world) {
+			throw new Error(`World is a singleton that already exists`)
 		}
-		_manager = this
+		_world = this
 		_init.call(this, options)
 		this.queries = queries
 		this.queries.$init(this)
@@ -130,7 +130,7 @@ export default class Manager {
 
 
 function _init(options) {
-	Entity.setEntityManager(this)
+	Entity.setWorld(this)
 
 	if (options) {
 
@@ -235,7 +235,7 @@ function _removeComponent(entity, component) {
 }
 
 
-Object.defineProperty(Manager.prototype, '$entityIdGenerator', {
+Object.defineProperty(World.prototype, '$entityIdGenerator', {
 	get: () => _generateEntityId,
 	set: idGeneratorFunction => {
 		if (_checkIdGeneratorFunction(idGeneratorFunction, 'Entity')) {
@@ -244,7 +244,7 @@ Object.defineProperty(Manager.prototype, '$entityIdGenerator', {
 	}
 })
 
-Object.defineProperty(Manager.prototype, '$componentIdGenerator', {
+Object.defineProperty(World.prototype, '$componentIdGenerator', {
 	get: () => _generateComponentId,
 	set: idGeneratorFunction => {
 		if (_checkIdGeneratorFunction(idGeneratorFunction, 'Component')) {
@@ -253,14 +253,14 @@ Object.defineProperty(Manager.prototype, '$componentIdGenerator', {
 	}
 })
 
-Object.defineProperty(Manager.prototype, 'entities', {
+Object.defineProperty(World.prototype, 'entities', {
 	get: () => $entities,
-	set: () => { throw new Error(`Can't manually overwrite Manager.entities`) }
+	set: () => { throw new Error(`Can't manually overwrite world.entities`) }
 })
 
-Object.defineProperty(Manager.prototype, 'components', {
+Object.defineProperty(World.prototype, 'components', {
 	get: () => $components,
-	set: () => { throw new Error(`Can't manually overwrite Manager.components`) }
+	set: () => { throw new Error(`Can't manually overwrite world.components`) }
 })
 
 

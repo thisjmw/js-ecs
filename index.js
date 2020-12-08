@@ -11,7 +11,7 @@ class TestCircle {
 		this.x = x
 		this.y = y
 		this.radius = radius
-		this.entity = ecs.manager.createEntity([
+		this.entity = ecs.world.createEntity([
 
 			ecs.components.transform({
 				position: {
@@ -34,14 +34,14 @@ class TestCircle {
 	}
 
 	destroy() {
-		ecs.manager.removeEntity(this.entity.id)
+		ecs.world.removeEntity(this.entity.id)
 	}
 }
 
 
-ecs.manager.systems.registerSystem(
+ecs.world.systems.registerSystem(
 	'collision_system',
-	ecs.manager.queries.$registerQuery('collision', [
+	ecs.world.queries.$registerQuery('collision', [
 		ecs.components.transform,
 		ecs.components.collision,
 		ecs.components.colliderGeometry
@@ -82,9 +82,9 @@ ecs.manager.systems.registerSystem(
 )
 
 
-ecs.manager.systems.registerSystem(
+ecs.world.systems.registerSystem(
 	'collision_reader_system',
-	ecs.manager.queries.$registerQuery('collision_reader', [ecs.components.collision]),
+	ecs.world.queries.$registerQuery('collision_reader', [ecs.components.collision]),
 	function collisionReaderSystem(entities) {
 		const handledCollisions = []
 
@@ -103,12 +103,12 @@ ecs.manager.systems.registerSystem(
 )
 
 
-ecs.manager.systems.registerSystem(
+ecs.world.systems.registerSystem(
 	'cleanup_system',
-	ecs.manager.queries['$GLOBAL'],
+	ecs.world.queries['$GLOBAL'],
 	function cleanupSystem() {
 		circles.forEach(circle => circle.destroy())
-		ecs.manager.$clean()
+		ecs.world.$clean()
 	}
 )
 
@@ -119,7 +119,7 @@ for (let i = 0; i < 50; i++) {
 	circles.push(new TestCircle(randomInt(10, 50), randomInt(10, 50), randomInt(1, 10)))
 }
 
-ecs.manager.systems.run()
+ecs.world.systems.run()
 
 
 

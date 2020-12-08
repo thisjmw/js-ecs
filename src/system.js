@@ -7,9 +7,9 @@ export default class System {
 	}
 
 
-	execute(time, delta) {
+	execute(deltaTime, time) {
 		const entities = this.query.entities
-		return this.$function(entities, time, delta)
+		return this.$function(entities, deltaTime, time)
 	}
 
 

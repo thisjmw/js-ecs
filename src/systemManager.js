@@ -1,13 +1,13 @@
 import System from './system.js'
 
 
-let $manager
+let _world
 
 
 export default class SystemManager {
 
-	constructor(entityManager) {
-		$manager = entityManager
+	constructor(world) {
+		_world = world
 		this.systems = []
 	}
 
@@ -24,7 +24,7 @@ export default class SystemManager {
 			throw new Error(`System "${name}" already exists`)
 		}
 
-		if (!$manager.queries[query.name]) {
+		if (!_world.queries[query.name]) {
 			throw new Error(`Query ${query.name} doesn't exist`)
 		}
 
@@ -41,7 +41,7 @@ export default class SystemManager {
 	}
 
 
-	run(time, delta) {
-		this.systems.forEach(system => system.execute(time, delta))
+	run(deltaTime, time) {
+		this.systems.forEach(system => system.execute(deltaTime, time))
 	}
 }
