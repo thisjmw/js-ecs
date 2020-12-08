@@ -41,7 +41,7 @@ class TestCircle {
 
 ecs.manager.systems.registerSystem(
 	'collision_system',
-	ecs.manager.queries.registerQuery('collision', [
+	ecs.manager.queries.$registerQuery('collision', [
 		ecs.components.transform,
 		ecs.components.collision,
 		ecs.components.colliderGeometry
@@ -84,7 +84,7 @@ ecs.manager.systems.registerSystem(
 
 ecs.manager.systems.registerSystem(
 	'collision_reader_system',
-	ecs.manager.queries.registerQuery('collision_reader', [ecs.components.collision]),
+	ecs.manager.queries.$registerQuery('collision_reader', [ecs.components.collision]),
 	function collisionReaderSystem(entities) {
 		const handledCollisions = []
 
@@ -105,7 +105,7 @@ ecs.manager.systems.registerSystem(
 
 ecs.manager.systems.registerSystem(
 	'cleanup_system',
-	ecs.manager.queries.getQuery('$GLOBAL'),
+	ecs.manager.queries['$GLOBAL'],
 	function cleanupSystem() {
 		circles.forEach(circle => circle.destroy())
 		ecs.manager.$clean()

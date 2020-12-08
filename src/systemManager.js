@@ -2,14 +2,12 @@ import System from './system.js'
 
 
 let $manager
-let $queryManager
 
 
 export default class SystemManager {
 
-	constructor(entityManager, queryManager) {
+	constructor(entityManager) {
 		$manager = entityManager
-		$queryManager = queryManager
 		this.systems = []
 	}
 
@@ -26,7 +24,7 @@ export default class SystemManager {
 			throw new Error(`System "${name}" already exists`)
 		}
 
-		if (!$queryManager.getQuery(query.name)) {
+		if (!$manager.queries[query.name]) {
 			throw new Error(`Query ${query.name} doesn't exist`)
 		}
 

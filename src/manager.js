@@ -1,5 +1,5 @@
 import Entity from './entity.js'
-import QueryManager from './queryManager.js'
+import queries from './queryManager.js'
 import SystemManager from './systemManager.js'
 import { isObject, getPrintableObject } from './util.js'
 
@@ -10,8 +10,6 @@ let _manager
 const $entities = {}
 const $components = {}
 const $toDestroy = []
-
-let $queryManager
 
 let _autoEntityId = 1
 let _autoComponentId = 1
@@ -31,6 +29,9 @@ export default class Manager {
 		}
 		_manager = this
 		_init.call(this, options)
+		this.queries = queries
+		this.queries.$init(this)
+		this.systems = new SystemManager(this, this.queries)
 	}
 
 
@@ -73,7 +74,7 @@ export default class Manager {
 	assignComponent(entityId, component) {
 		const entity = this.getEntity(entityId)
 		const createdComponent = _assignComponent.call(this, entity, component)
-		$queryManager.componentAdded(entity, createdComponent.$type)
+		this.queries.$componentAdded(entity, createdComponent.$type)
 		return createdComponent
 	}
 
@@ -85,7 +86,7 @@ export default class Manager {
 	}
 
 
-	$registerQuery(query) {
+	$queryAdded(query) {
 		const firstComponentName = query.components[0]
 		if (Object.hasOwnProperty.call($components, firstComponentName)) {
 			const entityIds = $components[firstComponentName].map(c => c.entityId)
@@ -111,13 +112,13 @@ export default class Manager {
 				delete $entities[entityId]
 			}
 		}
-		$queryManager.clear()
+		this.queries.$clear()
 	}
 
 
 	$clean() {
 		for (const target of $toDestroy) {
-			$queryManager.removeEntity(target.entity)
+			this.queries.$removeEntity(target.entity)
 			delete target.entity.components
 			for (const componentType of target.componentTypes) {
 				$components[componentType] = $components[componentType].filter(c => c.entityId !== target.entity.id)
@@ -130,9 +131,6 @@ export default class Manager {
 
 function _init(options) {
 	Entity.setEntityManager(this)
-	$queryManager = new QueryManager(this)
-
-	this.systems = new SystemManager(this, $queryManager) // TODO: Better interface
 
 	if (options) {
 
@@ -162,23 +160,6 @@ function _init(options) {
 			}
 		}
 	}
-
-	const queriesInterface = {
-		registerQuery: $queryManager.registerQuery.bind($queryManager),
-		clear: $queryManager.clear.bind($queryManager),
-		reset: $queryManager.reset.bind($queryManager),
-		getQuery: $queryManager.getQuery.bind($queryManager)
-	}
-
-	Object.defineProperty(queriesInterface, 'all', {
-		get: () => $queryManager.getQueries()
-	})
-
-	Object.defineProperty(queriesInterface, 'byComponent', {
-		get: () => $queryManager.getQueriesByComponent()
-	})
-
-	this.queries = queriesInterface
 }
 
 
@@ -198,7 +179,7 @@ function _createEntity(entityId, componentList) {
 	}
 
 	$entities[entityId] = entity
-	$queryManager.addEntity(entity)
+	this.queries.$addEntity(entity)
 
 	return entity
 }
@@ -246,7 +227,7 @@ function _removeComponent(entity, component) {
 	if (component) {
 		delete entity.components[component.$type]
 		$components[component.$type] = $components[component.$type].filter(c => c.component !== component)
-		$queryManager.componentRemoved(entity, component.$type)
+		this.queries.$componentRemoved(entity, component.$type)
 	} else {
 		const printableComponent = getPrintableObject(component, '$type')
 		console.warn(`Component "${printableComponent}" wasn't found on entity ${entity.id}`)
@@ -280,11 +261,6 @@ Object.defineProperty(Manager.prototype, 'entities', {
 Object.defineProperty(Manager.prototype, 'components', {
 	get: () => $components,
 	set: () => { throw new Error(`Can't manually overwrite Manager.components`) }
-})
-
-Object.defineProperty(Manager.prototype, '$queryManager', {
-	get: () => $queryManager,
-	set: () => { throw new Error(`Can't manually overwrite Manager.$queryManager`) }
 })
 
 

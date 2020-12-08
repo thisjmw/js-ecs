@@ -1,9 +1,6 @@
 export default class Query {
 
 	constructor(name, components) {
-		if (!this.queryManager) {
-			throw new Error(`Must define query manager with Query.setQueryManager first`)
-		}
 		this.name = name
 		this.components = _sanitizeComponents(components)
 		this.entities = []
@@ -73,9 +70,4 @@ function _sanitizeComponents(componentList) {
 		}
 	})
 	return sanitizedComponents
-}
-
-
-Query.setQueryManager = function setQueryManager(queryManager) {
-	Query.prototype.queryManager = queryManager
 }

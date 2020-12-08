@@ -141,14 +141,14 @@ ecs.components.$registerComponents([
 
 Queries keep track of all entities that contain a combination of components. They deliver these entities to systems that 
 are registered with the query. Queries can be registered with the function 
-`ecs.manager.queries.registerQuery(name, components)`:  
+`ecs.manager.queries.$registerQuery(name, components)`:  
 
 ```javascript
 // Keeps track of all entities that contain a `transform` component
-ecs.manager.queries.registerQuery('transform', [ ecs.components.transform ])
+ecs.manager.queries.$registerQuery('transform', [ ecs.components.transform ])
 
 // All entities that contain `transform`, `collision`, and `colliderGeometry` components
-ecs.manager.queries.registerQuery('collision', [
+ecs.manager.queries.$registerQuery('collision', [
     ecs.components.transform,
     ecs.components.collision,
     ecs.components.colliderGeometry
@@ -163,8 +163,8 @@ ecs.manager.createEntity([                              // id: 2
     ecs.components.someOtherComponent
 ])
 
-console.log(ecs.manager.queries.getQuery('transform').entities)  // [{... id: 1}, {... id: 2}]
-console.log(ecs.manager.queries.getQuery('collision').entities)  // [{... id: 2}]
+console.log(ecs.manager.queries['transform'].entities)  // [{... id: 1}, {... id: 2}]
+console.log(ecs.manager.queries['collision'].entities)  // [{... id: 2}]
 ```
 
 There is also a default `$GLOBAL` query which contains all entities.  
@@ -176,9 +176,9 @@ a query, and optionally they can receive `time` and `deltaTime`. Systems can be 
 `ecs.manager.systems.registerSystem(name, query, systemFunction)`:  
 
 ```javascript
-ecs.manager.registerSystem(
+ecs.manager.systems.registerSystem(
     'list_entities_system',
-    ecs.manager.queries.getQuery('$GLOBAL'),
+    ecs.manager.queries['$GLOBAL'],
     function listEntitiesSystem(entities) {
         for (const entity of entities) {
             console.log(`Entity ${entity.id} exists!`)
@@ -186,9 +186,9 @@ ecs.manager.registerSystem(
     }
 )
 
-ecs.manager.registerSystem(
+ecs.manager.systems.registerSystem(
     'collision_system',
-    ecs.manager.queries.getQuery('collision'), // <-- registered above in Queries section
+    ecs.manager.queries['collision'], // <-- registered above in Queries section
     function collisionSystem(entities, time, delta) {
         for (const entity of entities) {
             const transform = entity.getComponent(ecs.components.transform)
@@ -198,10 +198,10 @@ ecs.manager.registerSystem(
     }
 )
 
-ecs.manager.registerSystem(
+ecs.manager.systems.registerSystem(
     'move_right_system',
     // Queries can be registered at the time of registering systems, too:
-    ecs.manager.queries.registerQuery('position', [ecs.components.transform]),
+    ecs.manager.queries.$registerQuery('position', [ecs.components.transform]),
     function badMoveRightSystem(entities) {
         for (const entity of entities) {
             const position = entity.getComponent(ecs.components.transform).position
