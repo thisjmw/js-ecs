@@ -1,5 +1,5 @@
-import * as blueprints from './componentBlueprints.js'
-import { isObject, getPrintableObject } from './util.js'
+import * as blueprints from './componentBlueprints'
+import { isObject, getPrintableObject } from './util'
 
 
 const $components = {

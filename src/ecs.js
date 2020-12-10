@@ -1,5 +1,5 @@
-import World from './world.js'
-import components from './components.js'
+import World from './world'
+import components from './components'
 
 let _ecs
 

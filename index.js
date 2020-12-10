@@ -1,4 +1,4 @@
-import ECS from './src/ecs.js'
+import ECS from './src/ecs'
 
 const ecs = new ECS()
 

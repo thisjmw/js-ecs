@@ -1,6 +1,3 @@
-import { square } from './util.js'
-
-
 export const transform = {
 	proto: { $type: 'transform' },
 	defaults: {
@@ -61,7 +58,7 @@ export const colliderCircle = {
 
 			switch (otherCollider.$type) {
 				case 'colliderCircle':
-					return square(x - otherX) + square(y - otherY) <= square(radius + otherRadius)
+					return (x - otherX) ** 2 + (y - otherY) ** 2 <= (radius + otherRadius) ** 2
 				default:
 					return false
 			}

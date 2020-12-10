@@ -1,4 +1,4 @@
-import System from './system.js'
+import System from './system'
 
 
 let _world

@@ -4,9 +4,13 @@
   "description": "A simple entity component system written in javascript",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+	"build": "webpack"
   },
   "author": "thisjmw",
   "license": "ISC",
-  "type": "module"
+  "devDependencies": {
+    "webpack": "^5.10.0",
+    "webpack-cli": "^4.2.0"
+  }
 }

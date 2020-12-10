@@ -1,7 +1,7 @@
-import Entity from './entity.js'
-import queries from './queryManager.js'
-import SystemManager from './systemManager.js'
-import { isObject, getPrintableObject } from './util.js'
+import Entity from './entity'
+import queries from './queryManager'
+import SystemManager from './systemManager'
+import { isObject, getPrintableObject } from './util'
 
 const MAX_ID_GENERATION_TRIES = 100
 

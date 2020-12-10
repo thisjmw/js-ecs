@@ -1,8 +1,3 @@
-export function square(n) {
-	return n * n
-}
-
-
 export function randomInt(min, max) {
 	return Math.floor(Math.random() * (max - min + 1)) + min
 }
